@@ -91,7 +91,7 @@
           <li class="pure-menu-item pure-form" id="search-menu-item">
             <!-- We use GET here so it offers people a chance to set bookmarks etc -->
             <form name="searchForm" action="" method="GET">
-              <input id="search-q" class="" name="q" placeholder="URL or Title {% if active_tag_uuid %}in '{{ active_tag.title }}'{% endif %}" required="" type="text" value="">
+              <input id="search-q" class="" name="q" placeholder="URL or Title or CID {% if active_tag_uuid %}in '{{ active_tag.title }}'{% endif %}" required="" type="text" value="">
               <input name="tags" type="hidden" value="{% if active_tag_uuid %}{{active_tag_uuid}}{% endif %}">
               <button class="toggle-button " id="toggle-search" type="button" title="Search, or Use Alt+S Key" >
                 {% include "svgs/search-icon.svg" %}

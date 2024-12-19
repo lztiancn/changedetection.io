@@ -474,7 +474,7 @@ def changedetection_app(config=None, datastore_o=None):
                 errored_count += 1
 
             if search_q:
-                if (watch.get('title') and search_q in watch.get('title').lower()) or search_q in watch.get('url', '').lower():
+                if (watch.get('title') and search_q in watch.get('title').lower()) or (watch.get('cid') and search_q in watch.get('cid').lower()) or search_q in watch.get('url', '').lower():
                     sorted_watches.append(watch)
                 elif watch.get('last_error') and search_q in watch.get('last_error').lower():
                     sorted_watches.append(watch)

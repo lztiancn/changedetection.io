@@ -184,6 +184,8 @@ class import_xlsx_wachete(Importer):
                     extras['include_filters'] = [data.get('xpath')]
                 if data.get('name'):
                     extras['title'] = data.get('name').strip()
+                if data.get('cid'):
+                    extras['cid'] = data.get('cid').strip()
                 if data.get('interval (min)'):
                     minutes = int(data.get('interval (min)'))
                     hours, minutes = divmod(minutes, 60)
