@@ -74,6 +74,7 @@
                 {% set arrow_span = "" %}
                 <th><input style="vertical-align: middle" type="checkbox" id="check-all" > <a class="{{ 'active '+link_order if sort_attribute == 'date_created' else 'inactive' }}"  href="{{url_for('index', sort='date_created', order=link_order, tag=active_tag_uuid)}}"># <span class='arrow {{link_order}}'></span></a></th>
                 <th class="empty-cell"></th>
+                <th>CID</th>
                 <th><a class="{{ 'active '+link_order if sort_attribute == 'label' else 'inactive' }}" href="{{url_for('index', sort='label', order=link_order, tag=active_tag_uuid)}}">Website <span class='arrow {{link_order}}'></span></a></th>
              {% if any_has_restock_price_processor %}
                 <th>Restock &amp; Price</th>
@@ -110,6 +111,7 @@
                     {% endif %}
                     <a class="link-mute state-{{'on' if watch.notification_muted else 'off'}}" href="{{url_for('index', op='mute', uuid=watch.uuid, tag=active_tag_uuid)}}"><img src="{{url_for('static_content', group='images', filename='bell-off.svg')}}" alt="Mute notifications" title="Mute notifications" class="icon icon-mute" ></a>
                 </td>
+                <td class="title-col inline">{{watch.cid}}</td>
                 <td class="title-col inline">{{watch.title if watch.title is not none and watch.title|length > 0 else watch.url}}
                     <a class="external" target="_blank" rel="noopener" href="{{ watch.link.replace('source:','') }}"></a>
                     <a class="link-spread" href="{{url_for('form_share_put_watch', uuid=watch.uuid)}}"><img src="{{url_for('static_content', group='images', filename='spread.svg')}}" class="status-icon icon icon-spread" title="Create a link to share watch config with others" ></a>
