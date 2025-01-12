@@ -23,7 +23,7 @@ valid_tokens = {
 }
 
 default_notification_format_for_watch = 'System default'
-default_notification_format = 'Text'
+default_notification_format = 'HTML Color'
 default_notification_body = '{{watch_url}} had a change.\n---\n{{diff}}\n---\n'
 default_notification_title = 'ChangeDetection.io Notification - {{watch_url}}'
 
@@ -67,6 +67,10 @@ def process_notification(n_object, datastore):
 
     sent_objs = []
     from .apprise_asset import asset
+
+    if 'as_async' in n_object:
+        asset.async_mode = n_object.get('as_async')
+
     apobj = apprise.Apprise(debug=True, asset=asset)
 
     if not n_object.get('notification_urls'):
@@ -157,8 +161,6 @@ def process_notification(n_object, datastore):
             attach=n_object.get('screenshot', None)
         )
 
-        # Give apprise time to register an error
-        time.sleep(3)
 
         # Returns empty string if nothing found, multi-line string otherwise
         log_value = logs.getvalue()

@@ -35,7 +35,7 @@ dnspython==2.6.1 # related to eventlet fixes
 # jq not available on Windows so must be installed manually
 
 # Notification library
-apprise==1.9.0
+apprise==1.9.2
 
 # apprise mqtt https://github.com/dgtlmoon/changedetection.io/issues/315
 # use any version other than 2.0.x due to https://github.com/eclipse/paho.mqtt.python/issues/814
@@ -95,3 +95,5 @@ babel
 # Needed for > 3.10, https://github.com/microsoft/playwright-python/issues/2096
 greenlet >= 3.0.3
 
+# Scheduler - Windows seemed to miss a lot of default timezone info (even "UTC" !)
+tzdata
