@@ -28,6 +28,8 @@ class update_worker(threading.Thread):
 
     def queue_notification_for_watch(self, notification_q, n_object, watch):
         from changedetectionio import diff
+        from changedetectionio.notification import default_notification_format_for_watch
+
         dates = []
         trigger_text = ''
 
@@ -43,6 +45,10 @@ class update_worker(threading.Thread):
             snapshot_contents = watch.get_history_snapshot(dates[-1])
         else:
             snapshot_contents = "No snapshot/history available, the watch should fetch atleast once."
+
+        # If we ended up here with "System default"
+        if n_object.get('notification_format') == default_notification_format_for_watch:
+            n_object['notification_format'] = self.datastore.data['settings']['application'].get('notification_format')
 
         html_colour_enable = False
         # HTML needs linebreak, but MarkDown and Text can use a linefeed
@@ -77,7 +83,7 @@ class update_worker(threading.Thread):
             'current_snapshot': snapshot_contents,
             'diff': diff.render_diff(prev_snapshot, current_snapshot, line_feed_sep=line_feed_sep, html_colour=html_colour_enable),
             'diff_added': diff.render_diff(prev_snapshot, current_snapshot, include_removed=False, line_feed_sep=line_feed_sep),
-            'diff_full': diff.render_diff(prev_snapshot, current_snapshot, include_equal=True, line_feed_sep=line_feed_sep),
+            'diff_full': diff.render_diff(prev_snapshot, current_snapshot, include_equal=True, line_feed_sep=line_feed_sep, html_colour=html_colour_enable),
             'diff_patch': diff.render_diff(prev_snapshot, current_snapshot, line_feed_sep=line_feed_sep, patch_format=True),
             'diff_removed': diff.render_diff(prev_snapshot, current_snapshot, include_added=False, line_feed_sep=line_feed_sep),
             'notification_timestamp': now,
@@ -237,7 +243,6 @@ class update_worker(threading.Thread):
                 os.unlink(full_path)
 
     def run(self):
-        now = time.time()
         
         while not self.app.config.exit.is_set():
             update_handler = None
@@ -248,6 +253,7 @@ class update_worker(threading.Thread):
                 pass
 
             else:
+                fetch_start_time = time.time()
                 uuid = queued_item_data.item.get('uuid')
                 self.current_uuid = uuid
                 if uuid in list(self.datastore.data['watching'].keys()) and self.datastore.data['watching'][uuid].get('url'):
@@ -262,7 +268,6 @@ class update_worker(threading.Thread):
                     watch = self.datastore.data['watching'].get(uuid)
 
                     logger.info(f"Processing watch UUID {uuid} Priority {queued_item_data.priority} URL {watch['url']}")
-                    now = time.time()
 
                     try:
                         # Processor is what we are using for detecting the "Change"
@@ -281,6 +286,10 @@ class update_worker(threading.Thread):
                                                                              )
 
                         update_handler.call_browser()
+
+                        # In reality, the actual time of when the change was detected could be a few seconds after this
+                        # For example it should include when the page stopped rendering if using a playwright/chrome type fetch
+                        fetch_start_time = time.time()
 
                         changed_detected, update_obj, contents = update_handler.run_changedetection(watch=watch)
 
@@ -506,7 +515,7 @@ class update_worker(threading.Thread):
 
                     if not self.datastore.data['watching'].get(uuid):
                         continue
-                    #
+
                     # Different exceptions mean that we may or may not want to bump the snapshot, trigger notifications etc
                     if process_changedetection_results:
 
@@ -519,8 +528,6 @@ class update_worker(threading.Thread):
                                 except Exception as e:
                                     logger.warning(f"UUID: {uuid} Extract <title> as watch title was enabled, but couldn't find a <title>.")
 
-                        # Now update after running everything
-                        timestamp = round(time.time())
                         try:
                             self.datastore.update_watch(uuid=uuid, update_obj=update_obj)
 
@@ -536,24 +543,28 @@ class update_worker(threading.Thread):
 
                                 # Small hack so that we sleep just enough to allow 1 second  between history snapshots
                                 # this is because history.txt indexes/keys snapshots by epoch seconds and we dont want dupe keys
-
-                                if watch.newest_history_key and int(timestamp) == int(watch.newest_history_key):
+                                # @also - the keys are one per second at the most (for now)
+                                if watch.newest_history_key and int(fetch_start_time) == int(watch.newest_history_key):
                                     logger.warning(
-                                        f"Timestamp {timestamp} already exists, waiting 1 seconds so we have a unique key in history.txt")
-                                    timestamp = str(int(timestamp) + 1)
+                                        f"Timestamp {fetch_start_time} already exists, waiting 1 seconds so we have a unique key in history.txt")
+                                    fetch_start_time += 1
                                     time.sleep(1)
 
                                 watch.save_history_text(contents=contents,
-                                                        timestamp=timestamp,
+                                                        timestamp=int(fetch_start_time),
                                                         snapshot_id=update_obj.get('previous_md5', 'none'))
 
-                                if update_handler.fetcher.content:
-                                    watch.save_last_fetched_html(contents=update_handler.fetcher.content, timestamp=timestamp)
+
+                                empty_pages_are_a_change = self.datastore.data['settings']['application'].get('empty_pages_are_a_change', False)
+                                if update_handler.fetcher.content or (not update_handler.fetcher.content and empty_pages_are_a_change):
+                                    # attribute .last_changed is then based on this data
+                                    watch.save_last_fetched_html(contents=update_handler.fetcher.content, timestamp=int(fetch_start_time))
 
                                 # Notifications should only trigger on the second time (first time, we gather the initial snapshot)
                                 if watch.history_n >= 2:
                                     logger.info(f"Change detected in UUID {uuid} - {watch['url']}")
                                     if not watch.get('notification_muted'):
+                                        # @todo only run this if notifications exist
                                         self.send_content_changed_notification(watch_uuid=uuid)
 
                         except Exception as e:
@@ -575,15 +586,15 @@ class update_worker(threading.Thread):
                     except Exception as e:
                         pass
 
-                    self.datastore.update_watch(uuid=uuid, update_obj={'fetch_time': round(time.time() - now, 3),
-                                                                       'last_checked': round(time.time()),
+                    self.datastore.update_watch(uuid=uuid, update_obj={'fetch_time': round(time.time() - fetch_start_time, 3),
+                                                                       'last_checked': int(fetch_start_time),
                                                                        'check_count': count
                                                                        })
 
 
                 self.current_uuid = None  # Done
                 self.q.task_done()
-                logger.debug(f"Watch {uuid} done in {time.time()-now:.2f}s")
+                logger.debug(f"Watch {uuid} done in {time.time()-fetch_start_time:.2f}s")
 
                 # Give the CPU time to interrupt
                 time.sleep(0.1)
