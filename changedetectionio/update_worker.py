@@ -91,6 +91,7 @@ class update_worker(threading.Thread):
             'triggered_text': triggered_text,
             'uuid': watch.get('uuid') if watch else None,
             'watch_url': watch.get('url') if watch else None,
+            'cid': watch.get('cid') if watch else None,
         })
 
         if watch:
