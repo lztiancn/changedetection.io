@@ -4,6 +4,10 @@
 {% macro render_common_settings_form(form, emailprefix, settings_application, extra_notification_token_placeholder_info) %}
                         <div class="pure-control-group">
                             {{ render_field(form.notification_urls, rows=5, placeholder="Examples:
+    Gitter - gitter://token/room
+    Office365 - o365://TenantID:AccountEmail/ClientID/ClientSecret/TargetEmail
+    AWS SNS - sns://AccessKeyID/AccessSecretKey/RegionName/+PhoneNo
+    SMTPS - mailtos://user:pass@mail.domain.com?to=receivingAddress@example.com
     discord://{机器人Webhook地址}&secret={机器人加签}",
     class="notification-urls" )
                             }}
