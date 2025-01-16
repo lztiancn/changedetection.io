@@ -44,6 +44,7 @@ from changedetectionio import html_tools, __version__
 from changedetectionio import queuedWatchMetaData
 from changedetectionio.api import api_v1
 from .time_handler import is_within_schedule
+from flask_babel import Babel, gettext, lazy_gettext
 
 datastore = None
 
@@ -73,6 +74,11 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config.exit = Event()
 
 app.config['NEW_VERSION_AVAILABLE'] = False
+
+app.config['BABEL_DEFAULT_LOCALE'] = "en"
+app.config['BABEL_DEFAULT_TIMEZONE'] = 'Asia/Shanghai'
+
+babel = Babel(app)
 
 if os.getenv('FLASK_SERVER_NAME'):
     app.config['SERVER_NAME'] = os.getenv('FLASK_SERVER_NAME')
@@ -275,8 +281,6 @@ def changedetection_app(config=None, datastore_o=None):
     # https://flask-cors.readthedocs.io/en/latest/
     #    CORS(app)
 
-
-
     @login_manager.user_loader
     def user_loader(email):
         user = User()
@@ -426,6 +430,11 @@ def changedetection_app(config=None, datastore_o=None):
         logger.trace(f"RSS generated in {time.time() - now:.3f}s")
         return response
 
+    def get_locale():
+        return request.accept_languages.best_match(['zh', 'en'])
+
+
+    babel.locale_selector_func = get_locale
     @app.route("/", methods=['GET'])
     @login_optionally_required
     def index():
