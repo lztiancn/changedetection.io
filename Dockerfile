@@ -7,7 +7,7 @@ ARG PYTHON_VERSION=3.11
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 
-COPY sources.list /etc/apt/sources.list/debian.sources
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
 
 # See `cryptography` pin comment in requirements.txt
 ARG CRYPTOGRAPHY_DONT_BUILD_RUST=1
@@ -29,7 +29,7 @@ WORKDIR /install
 COPY requirements.txt /requirements.txt
 
 # --extra-index-url https://www.piwheels.org/simple  is for cryptography module to be prebuilt (or rustc etc needs to be installed)
-RUN pip install --extra-index-url https://www.piwheels.org/simple  --target=/dependencies -r /requirements.txt
+RUN pip install --extra-index-url https://mirrors.aliyun.com/pypi/simple/  --target=/dependencies -r /requirements.txt
 
 # Playwright is an alternative to Selenium
 # Excluded this package from requirements.txt to prevent arm/v6 and arm/v7 builds from failing
@@ -40,6 +40,8 @@ RUN pip install --target=/dependencies playwright~=1.48.0 \
 # Final image stage
 FROM python:${PYTHON_VERSION}-slim-bookworm
 LABEL org.opencontainers.image.source="https://github.com/dgtlmoon/changedetection.io"
+
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1.1 \
