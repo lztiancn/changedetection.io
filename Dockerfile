@@ -68,7 +68,7 @@ ENV PYTHONPATH=/usr/local
 EXPOSE 5000
 
 # The actual flask app module
-# COPY changedetectionio /app/changedetectionio
+COPY changedetectionio /app/changedetectionio
 # Starting wrapper
 COPY changedetection.py /app/changedetection.py
 

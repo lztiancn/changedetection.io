@@ -3,6 +3,7 @@ import time
 from apprise import NotifyFormat
 import apprise
 from loguru import logger
+
 from .dingtalkrobotnotification import notify_dingtalk
 
 valid_tokens = {
@@ -81,11 +82,13 @@ def process_notification(n_object, datastore):
         need_apprise = False
         for url in n_object['notification_urls']:
 
-            # # Get the notification body from datastore
+            # Get the notification body from datastore
             n_body = jinja_render(template_str=n_object.get('notification_body', ''), **notification_parameters)
             if n_object.get('notification_format', '').startswith('HTML'):
                 n_body = n_body.replace("\n", '<br>')
             
+            notify_dingtalk(n_body, url)
+
             n_title = jinja_render(template_str=n_object.get('notification_title', ''), **notification_parameters)
 
             url = url.strip()
@@ -103,6 +106,7 @@ def process_notification(n_object, datastore):
             if url.startswith('discord://') and url.find("oapi.dingtalk.com/robot/send"):
                 notify_dingtalk(n_body, url)
                 continue
+
             # Re 323 - Limit discord length to their 2000 char limit total or it wont send.
             # Because different notifications may require different pre-processing, run each sequentially :(
             # 2000 bytes minus -
